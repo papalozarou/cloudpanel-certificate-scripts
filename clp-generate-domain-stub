@@ -1,0 +1,40 @@
+#!/bin/bash
+
+#-------------------------------------------------------------------------------
+# Simple script to generate a stub file for a domain. This script is triggered 
+# by "incron" when a site is created in CloudPanel. 
+#
+# An empty stub file is created within "~/.clp-sites-enabled" in a given user's 
+# home folder, enabling the user to subsequently issue a certificate via 
+# "incron".
+#
+# Place this script within "/usr/local/bin", adding execute permissions, then
+# add the following to the root user's "incrontab", via "sudo incrontab -e":
+#
+# /etc/nginx/sites-enabled/ IN_CREATE /usr/local/bin/clp-generate-domain-stub $#
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# Imported shared variables.
+#-------------------------------------------------------------------------------
+. clp-common
+
+#-------------------------------------------------------------------------------
+# Domain and file variables:
+#
+# 1. "DOMAIN_DIR" – the passed in site config file;
+# 2. "DOMAIN" – derived from the above;
+# 3. "ROOT_DOMAIN" – the root domain taken from the above; and
+# 4. "ROOT_DOMAIN_STUB" – the file path of the stub file to be created for the 
+#   domain.
+#-------------------------------------------------------------------------------
+DOMAIN_CONF="$1"
+DOMAIN="${DOMAIN_CONF%.conf}"
+ROOT_DOMAIN="$(echo "$DOMAIN" | awk -F'.' '{print $(NF-1) FS $NF}')"
+ROOT_DOMAIN_STUB="$DOMAIN_STUB_DIR/$ROOT_DOMAIN"
+
+#-------------------------------------------------------------------------------
+# Creates and chowns the domain file.
+#-------------------------------------------------------------------------------
+touch "$ROOT_DOMAIN_STUB"
+chown "$ACME_USER:$USER_GROUP" "$ROOT_DOMAIN_STUB"

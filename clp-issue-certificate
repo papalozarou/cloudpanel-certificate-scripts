@@ -1,0 +1,63 @@
+#!/bin/bash
+
+#-------------------------------------------------------------------------------
+# Issues a LetsEncrypt certificate for the domain root and subdomain wildcard, 
+# using "acme.sh", for newly created sites in CloudPanel.
+#
+# This script is triggered by "incron" when the root user creates a file within 
+# "~/.clp-sites-enabled" in a given user's home directory. Certificate creation 
+# subsequently triggers the root user to install it.
+#
+# Place this script within "/usr/local/bin", adding execute permissions, then
+# add the following to the the user's "incrontab", via "incrontab -e", replacing
+# "$ACME_USER" with the correct user name:
+#
+# /home/$ACME_USER/.clp-sites-enabled/  IN_CREATE /usr/local/bin/clp-issue-certificate $#
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# Imported shared variables.
+#-------------------------------------------------------------------------------
+. clp-common
+
+#-------------------------------------------------------------------------------
+# File variables:
+#
+# 1. "ROOT_DOMAIN" – the stub file that is created in 
+#    "/home/$ACME_USER/.clp-sites-enabled" when a new domain is created in 
+#    CloudPanel.
+#-------------------------------------------------------------------------------
+ROOT_DOMAIN="$1"
+
+#-------------------------------------------------------------------------------
+# Certificate variables.
+#
+# 1. "ACME_SH" – the "acme.sh" script to run; and
+# 2. "ROOT_DOMAIN_CERTS_DIR" – the directory where the domain certificate and 
+#    private key are stored.
+#-------------------------------------------------------------------------------
+ACME_SH="$CERTS_DIR/acme.sh"
+ROOT_DOMAIN_CERT_DIR="$CERTS_DIR/$ROOT_DOMAIN"'_ecc'
+
+#-------------------------------------------------------------------------------
+# Checks to see if the root domain certificate directory already exists. If no,
+# issue and install the certificate and private key. If yes exit.
+#-------------------------------------------------------------------------------
+existingCertCheck () {
+  if [ ! -d "$ROOT_DOMAIN_CERT_DIR" ]; then
+    issueCertificate
+  else
+    exit 1
+  fi
+}
+
+#-------------------------------------------------------------------------------
+# Issues the certificate for the given domain. Takes one mandatory argument:
+#
+# 1. "${1:?}" - the domain name.
+#-------------------------------------------------------------------------------
+issueCertificate () {
+  /bin/bash "$ACME_SH" --issue --dns dns_cf -d "$ROOT_DOMAIN" -d "*.$ROOT_DOMAIN"
+}
+
+existingCertCheck

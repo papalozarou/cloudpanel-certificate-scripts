@@ -1,0 +1,61 @@
+#!/bin/bash
+
+#-------------------------------------------------------------------------------
+# Installs a newly generated LetsEncrypt certificate in CloudPanel, using 
+# "clpctl".
+#
+# This script is triggered by "incron" when the specified user creates a 
+# certificate.
+#
+# Place this script within "/usr/local/bin", adding execute permissions, then
+# add the following to the root user's "incrontab", via "sudo incrontab -e", 
+# replacing "$ACME_USER" with the correct user name:
+#
+# /home/$ACME_USER/.acme.sh/ IN_CREATE  /usr/local/bin/clp-install-certificate $#
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# Imported shared variables.
+#-------------------------------------------------------------------------------
+. clp-common
+
+#-------------------------------------------------------------------------------
+# Domain and certificate variables:
+#
+# 1. "ROOT_DOMAIN_DIRNAME" – the name of the directory containing the 
+#    certificates to install, without the file path;
+# 2. "ROOT_DOMAIN_CERT_DIR" – the full file path to the directory where the 
+#    certificate is stored;
+# 3. "DIRNAME_POSTFIX" – the postfix applied to the cert directory, usually 
+#    "_ecc"; 
+# 3. "ROOT_DOMAIN" – the domain name derived from "$DOMAIN_DIRNAME"; and
+# 4. "ROOT_DOMAIN_STUB" – the file path of the previously created stub file for 
+#    the domain.
+#-------------------------------------------------------------------------------
+ROOT_DOMAIN_DIRNAME="$1"
+ROOT_DOMAIN_CERT_DIR="$CERTS_DIR/$ROOT_DOMAIN_DIRNAME"
+DIRNAME_POSTFIX='_ecc'
+ROOT_DOMAIN="${ROOT_DOMAIN_DIRNAME%$DIRNAME_POSTFIX}"
+ROOT_DOMAIN_STUB="$DOMAIN_STUB_DIR/$ROOT_DOMAIN"
+
+#-------------------------------------------------------------------------------
+# Installs the generated certificate and private key in to CloudPanel using the 
+# "clpctl" CLI command, as per:
+#
+# - https://www.cloudpanel.io/docs/v2/cloudpanel-cli/root-user-commands/#installing-a-certificate
+#-------------------------------------------------------------------------------
+installCertificateAndPrivateKey () {
+  local CERTIFICATE="$ROOT_DOMAIN_CERT_DIR/fullchain.cer"
+  local PRIVATE_KEY="$ROOT_DOMAIN_CERT_DIR/$ROOT_DOMAIN.key"
+
+  /usr/bin/clpctl site:install:certificate --domainName="$ROOT_DOMAIN" --privateKey="$PRIVATE_KEY" --certificate="$CERTIFICATE"
+}
+
+#-------------------------------------------------------------------------------
+# Waits 50s to allow time for the certificate files to be genertated by 
+# "clp-issue-certificate", then installs them to Cloudpanel and deletes the 
+# domain stub file.
+#-------------------------------------------------------------------------------
+sleep 50
+installCertificateAndPrivateKey
+rm "$ROOT_DOMAIN_STUB"

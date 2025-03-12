@@ -14,7 +14,7 @@ You will also need to have generated a certificate already via acme.sh, using yo
 Grab these scripts:
 
 ```
-git clone 
+git clone https://github.com/papalozarou/cloudpanel-certificate-scripts.git
 ```
 
 You will need to edit `clp-common` to add the user name for the acme.sh user.

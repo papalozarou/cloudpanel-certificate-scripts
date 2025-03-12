@@ -54,7 +54,7 @@ If things don't work, check `journalctl` for clues.
 
 1. The root user watches, via incron, for domains being created by CloudPanel in `/etc/nginx/sites-enabled`. When a new site is created, `clp-generate-domain-stub` creates a domain stub file in `~/.clp-sites-enabled` in the acme.sh user's home directory.
 2. The acme.sh user watches this folder, via incron, `~/.clp-sites-enabled` for a domain stub file. When a new stub file is created, `clp-issue-certificate` checks to see if a certificate has already been created for that domain. If it has not, a root domain and wildcard certificate will be generated via LetsEncrypt. If it has, the script exits.
-3. The root user watches, via incron, the `.acme.sh` directory for newly created certificates folders. When a new certificate folder is created, `clp-install-certificate` waits 50s, to give LetsEncrypt time to generate the full set of certificate files, then installs the certificate to the correct domain in CloudPanel, and deletes the domain stub file within `~/.clp-sites-enabled`.
+3. The root user watches, via incron, the `.acme.sh` directory for newly created certificates folders. When a new certificate folder is created, `clp-install-certificate` waits 50s, to give LetsEncrypt time to generate the full set of certificate files, then installs the certificate to the correct domain in CloudPanel. Lastly it deletes the domain stub file within `~/.clp-sites-enabled`.
 
 ## N.B.
 

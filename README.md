@@ -2,7 +2,7 @@
 
 These scripts are intended to help generate and install *root domain and wildcard* SSL certificates, using incron to trigger [acme.sh](https://github.com/acmesh-official/acme.sh/tree/master) when a user generates a site in [CloudPanel](http://cloudpanel.io).
 
-It's intended for a configuration where the acme.sh user is not the root user, and is set up to use Cloudflare DNS.
+It's intended for a configuration where the acme.sh user is not the root user, is set up to use Cloudflare DNS and uses LetsEncrypt to generate certificates.
 
 ## Prerequisites
 Assuming you have already installed CloudPanel, you will need to install acme.sh following the instructions on the repo, and install incron via your package manager (i.e. `sudo apt install incron`).

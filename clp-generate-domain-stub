@@ -30,7 +30,8 @@
 #-------------------------------------------------------------------------------
 DOMAIN_CONF="$1"
 DOMAIN="${DOMAIN_CONF%.conf}"
-ROOT_DOMAIN="$(echo "$DOMAIN" | awk -F'.' '{print $(NF-1) FS $NF}')"
+# ROOT_DOMAIN="$(echo "$DOMAIN" | awk -F'.' '{print $(NF-1) FS $NF}')"
+ROOT_DOMAIN="$DOMAIN"
 ROOT_DOMAIN_STUB="$DOMAIN_STUB_DIR/$ROOT_DOMAIN"
 
 #-------------------------------------------------------------------------------

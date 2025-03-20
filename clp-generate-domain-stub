@@ -36,5 +36,7 @@ ROOT_DOMAIN_STUB="$DOMAIN_STUB_DIR/$ROOT_DOMAIN"
 #-------------------------------------------------------------------------------
 # Creates and chowns the domain file.
 #-------------------------------------------------------------------------------
-touch "$ROOT_DOMAIN_STUB"
-chown "$ACME_USER:$USER_GROUP" "$ROOT_DOMAIN_STUB"
+if [[ "$DOMAIN" !=  *conf.bak ]]; then
+  touch "$ROOT_DOMAIN_STUB"
+  chown "$ACME_USER:$USER_GROUP" "$ROOT_DOMAIN_STUB"
+fi

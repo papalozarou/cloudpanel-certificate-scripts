@@ -47,7 +47,7 @@ REMOTE_SSH_HOSTNAME=''
 # Domain variables
 #-------------------------------------------------------------------------------
 DOMAIN=''
-DOMAIN_CERT="$DOMAIN.cert"
+DOMAIN_CERT="$DOMAIN.cer"
 DOMAIN_KEY="$DOMAIN.key"
 
 #-------------------------------------------------------------------------------
@@ -61,9 +61,10 @@ LOCAL_USER_DIR="/home/$LOCAL_USER"
 LOCAL_CERT_DIR="$LOCAL_USER_DIR/services/certs/$DOMAIN/"
 LOCAL_CERT_FILE="$LOCAL_CERT_DIR/$DOMAIN_CERT"
 LOCAL_CERT_KEY="$LOCAL_CERT_DIR/$DOMAIN_KEY"
+
 REMOTE_CERT_DIR="$CERTS_DIR/$DOMAIN"'_ecc/'
 REMOTE_CERT_FILE="$REMOTE_CERT_DIR/$DOMAIN_CERT"
-REMOTE_CERT_KEY="$REMOTE_CERT_KEY/$DOMAIN_KEY"
+REMOTE_CERT_KEY="$REMOTE_CERT_DIR/$DOMAIN_KEY"
 
 #-------------------------------------------------------------------------------
 # Controls tailscale service. Takes one mandatory argument:
@@ -85,9 +86,14 @@ controlTailscale () {
 # no arguments as "$ORIG_MOD_DATE" and "$RSYNC_MOD_DATE" are in the global scope.
 #-------------------------------------------------------------------------------
 chownAndRestartTraefik () {
+  echo "Original modification date is $ORIG_MOD_DATE"
+  echo "Post rsync modification date is $RSYNC_MOD_DATE"
+
   if [[ "$RSYNC_MOD_DATE" != "$ORIG_MOD_DATE" ]]; then 
     chown -R "$LOCAL_USER":"$LOCAL_GROUP" "$LOCAL_CERT_DIR"
     docker restart Traefik
+  else
+    echo "No certificate updates."
   fi
 }
 
@@ -99,8 +105,7 @@ chownAndRestartTraefik () {
 #-------------------------------------------------------------------------------
 getDateModified () {
   local FILE="${1:?}"
-  local FILE_PATH="$LOCAL_CERT_DIR/$FILE"
-  local FILE_MOD_DATE="$(date -r "$FILE_PATH" +%s)"
+  local FILE_MOD_DATE="$(date -r "$FILE" +%s)"
 
   echo "$FILE_MOD_DATE"
 }

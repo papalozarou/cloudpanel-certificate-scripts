@@ -67,6 +67,11 @@ REMOTE_CERT_FILE="$REMOTE_CERT_DIR/$DOMAIN_CERT"
 REMOTE_CERT_KEY="$REMOTE_CERT_DIR/$DOMAIN_KEY"
 
 #-------------------------------------------------------------------------------
+# Docker variables.
+#-------------------------------------------------------------------------------
+REVERSE_PROXY=''
+
+#-------------------------------------------------------------------------------
 # Controls tailscale service. Takes one mandatory argument:
 # 
 # 1. "${1:?}" – the action to take.
@@ -82,16 +87,17 @@ controlTailscale () {
 
 #-------------------------------------------------------------------------------
 # Compares the modification date of the file from before and after rsync has run,
-# chowning the files and restarting Traefik if the values are not equal. Takes 
-# no arguments as "$ORIG_MOD_DATE" and "$RSYNC_MOD_DATE" are in the global scope.
+# chowning the files and restarting "$REVERSE_PROXY" if the values are not equal.
+# Takes no arguments as "$ORIG_MOD_DATE" and "$RSYNC_MOD_DATE" are in the global 
+# scope.
 #-------------------------------------------------------------------------------
-chownAndRestartTraefik () {
+chownAndRestartReverseProxy () {
   echo "Original modification date is $ORIG_MOD_DATE"
   echo "Post rsync modification date is $RSYNC_MOD_DATE"
 
   if [[ "$RSYNC_MOD_DATE" != "$ORIG_MOD_DATE" ]]; then 
     chown -R "$LOCAL_USER":"$LOCAL_GROUP" "$LOCAL_CERT_DIR"
-    docker restart Traefik
+    docker restart "$REVERSE_PROXY"
   else
     echo "No certificate updates."
   fi
@@ -131,7 +137,7 @@ mainScript () {
 
   RSYNC_MOD_DATE="$(getDateModified "$LOCAL_CERT_FILE")"
 
-  chownAndRestartTraefik
+  chownAndRestartReverseProxy
 }
 
 #-------------------------------------------------------------------------------

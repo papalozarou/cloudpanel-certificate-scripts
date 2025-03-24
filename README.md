@@ -11,7 +11,7 @@ You will also need to have generated a certificate already via acme.sh, using yo
 
 ## Usage
 
-Grab these scripts:
+Grab the scripts:
 
 ```
 git clone https://github.com/papalozarou/cloudpanel-certificate-scripts.git
@@ -56,10 +56,24 @@ If things don't work, check `journalctl` for clues.
 2. The acme.sh user watches this folder, via incron, `~/.clp-sites-enabled` for a domain stub file. When a new stub file is created, `clp-issue-certificate` checks to see if a certificate has already been created for that domain. If it has not, a root domain and wildcard certificate will be generated via LetsEncrypt. If it has, the script exits.
 3. The root user watches, via incron, the `.acme.sh` directory for newly created certificates folders. When a new certificate folder is created, `clp-install-certificate` waits 50s, to give LetsEncrypt time to generate the full set of certificate files, then installs the certificate to the correct domain in CloudPanel. Lastly it deletes the domain stub file within `~/.clp-sites-enabled`.
 
-## N.B.
+## Copying certs to local machines
 
-As this only generates root domain and wildcard certificates, you will need to manually install these files into CloudPanel for any subdomain sites you create using the following, replacing placeholders:
+If you want to use generated certificates for services within your local network you can download `clp-common` and `clp-certificate-transfer`. You will need to edit `clp-common` to add the user name for the remote acme.sh user as before.
+
+`clp-certificate-transfer` is opinionated about how you are setup. And probably not in a good way. So you will likely need to edit the script to make it work in your local environment. At the very least you will need to edit the following:
 
 ```
-sudo clpctl site:install:certificate --domainName=subdomain.domain.com --privateKey=/home/$ACME_USER/.acme.sh/domain.com_ecc/domain.com.key --certificate=/home/$ACME_USER/.acme.sh/domain.com_ecc/fullchain.cer
+LOCAL_USER=''
+[…]
+REMOTE_SSH_HOSTNAME=''
+[…]
+DOMAIN=''
+[…]
+REVERSE_PROXY=''
+```
+
+Once edited, copy both scripts to `/usr/local/bin` checking that `clp-certificate-transfer` is executable and add the following to the root users crontab, via `sudo crontab -e`:
+
+```
+5	6	*	*	*	/usr/local/bin/clp-certificate-transfer 2>&1 | /usr/bin/logger -t CLP-CERT-TRANSFER
 ```

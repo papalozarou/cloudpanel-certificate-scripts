@@ -107,7 +107,11 @@ chownAndRestartReverseProxy () {
 # Gets the modified date of a file as Unix Epoch Time. Takes one mandatory 
 # argument:
 # 
-# 1. "${1:?}" – the file.
+# 1. "${1:?}" – the file to get the modified date of.
+# 
+# As per:
+# 
+# - https://superuser.com/a/1245986
 #-------------------------------------------------------------------------------
 getDateModified () {
   local FILE="${1:?}"

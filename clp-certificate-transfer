@@ -51,7 +51,7 @@ DOMAIN_CERT="$DOMAIN.cer"
 DOMAIN_KEY="$DOMAIN.key"
 
 #-------------------------------------------------------------------------------
-# Directory and file variables
+# Directory and file variables.
 # 
 # N.B.
 # You will need to edit "$LOCAL_CERT_DIR" to match your setup. "$REMOTE_CERT_DIR"

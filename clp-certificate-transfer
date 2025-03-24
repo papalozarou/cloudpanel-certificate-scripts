@@ -1,0 +1,135 @@
+#!/bin/bash
+
+#-------------------------------------------------------------------------------
+# Copies generated certificates for a given domain to local machine using 
+# tailscale.
+# 
+# The script:
+# 
+# 1. stores the current certificates modification date in a variable;
+# 2. enables the tailscale connection on the local machine;
+# 3. copies the certificate and key files if they have changed, using rsync;
+# 4. disables the tailscale connection;
+# 5. tests the original modification date of the certificate file with the 
+#    modification date post the rsync command; and
+# 6. chowns the files to the local user and restarts the Traefik container, if 
+#    the files have changed.
+# 
+# Place this script, and "clp-common", within "/usr/local/bin", adding execute 
+# permissions to this script. Then add the following to the root user's 
+# "crontab", via "sudo crontab -e":
+# 
+# 5	6	*	*	*	/usr/local/bin/clp-certificate-transfer 2>&1 | /usr/bin/logger -t CLP-CERT-TRANSFER
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# Imported shared variables.
+#-------------------------------------------------------------------------------
+. clp-common
+
+#-------------------------------------------------------------------------------
+# User variables.
+# 
+# N.B.
+# The remote user is taken as the "$ACME_USER" from "clp-common" – please ensure 
+# this is set correctly.
+#-------------------------------------------------------------------------------
+LOCAL_USER=''
+LOCAL_GROUP="$LOCAL_USER"
+REMOTE_USER="$ACME_USER"
+
+#-------------------------------------------------------------------------------
+# Server variables
+#-------------------------------------------------------------------------------
+REMOTE_SSH_HOSTNAME=''
+
+#-------------------------------------------------------------------------------
+# Domain variables
+#-------------------------------------------------------------------------------
+DOMAIN=''
+DOMAIN_CERT="$DOMAIN.cert"
+DOMAIN_KEY="$DOMAIN.key"
+
+#-------------------------------------------------------------------------------
+# Directory and file variables
+# 
+# N.B.
+# You will need to edit "$LOCAL_CERT_DIR" to match your setup. "$REMOTE_CERT_DIR"
+# is constructed using "$CERTS_DIR" from "clp-common".
+#-------------------------------------------------------------------------------
+LOCAL_USER_DIR="/home/$LOCAL_USER"
+LOCAL_CERT_DIR="$LOCAL_USER_DIR/services/certs/$DOMAIN/"
+LOCAL_CERT_FILE="$LOCAL_CERT_DIR/$DOMAIN_CERT"
+LOCAL_CERT_KEY="$LOCAL_CERT_DIR/$DOMAIN_KEY"
+REMOTE_CERT_DIR="$CERTS_DIR/$DOMAIN"'_ecc/'
+REMOTE_CERT_FILE="$REMOTE_CERT_DIR/$DOMAIN_CERT"
+REMOTE_CERT_KEY="$REMOTE_CERT_KEY/$DOMAIN_KEY"
+
+#-------------------------------------------------------------------------------
+# Controls tailscale service. Takes one mandatory argument:
+# 
+# 1. "${1:?}" – the action to take.
+# 
+# N.B.
+# There is no error checking here because we're being lazy.
+#-------------------------------------------------------------------------------
+controlTailscale () {
+  local ACTION="${1:?}"
+
+  tailscale "$ACTION"
+}
+
+#-------------------------------------------------------------------------------
+# Compares the modification date of the file from before and after rsync has run,
+# chowning the files and restarting Traefik if the values are not equal. Takes 
+# no arguments as "$ORIG_MOD_DATE" and "$RSYNC_MOD_DATE" are in the global scope.
+#-------------------------------------------------------------------------------
+chownAndRestartTraefik () {
+  if [[ "$RSYNC_MOD_DATE" != "$ORIG_MOD_DATE" ]]; then 
+    chown -R "$LOCAL_USER":"$LOCAL_GROUP" "$LOCAL_CERT_DIR"
+    docker restart Traefik
+  fi
+}
+
+#-------------------------------------------------------------------------------
+# Gets the modified date of a file as Unix Epoch Time. Takes one mandatory 
+# argument:
+# 
+# 1. "${1:?}" – the file.
+#-------------------------------------------------------------------------------
+getDateModified () {
+  local FILE="${1:?}"
+  local FILE_PATH="$LOCAL_CERT_DIR/$FILE"
+  local FILE_MOD_DATE="$(date -r "$FILE_PATH" +%s)"
+
+  echo "$FILE_MOD_DATE"
+}
+
+#-------------------------------------------------------------------------------
+# Uses rsync to copy the respective files from the remote server, only if 
+# they've changed.
+#-------------------------------------------------------------------------------
+rsyncFiles () {
+  rsync -prtuv "$REMOTE_SSH_HOSTNAME:$REMOTE_CERT_FILE" "$LOCAL_CERT_FILE"
+  rsync -prtuv "$REMOTE_SSH_HOSTNAME:$REMOTE_CERT_KEY" "$LOCAL_CERT_KEY"
+}
+
+#-------------------------------------------------------------------------------
+# Executes the main functions of the script.
+#-------------------------------------------------------------------------------
+mainScript () {
+  ORIG_MOD_DATE="$(getDateModified "$LOCAL_CERT_FILE")"
+
+  controlTailscale 'up'
+  rsyncFiles
+  controlTailscale 'down'
+
+  RSYNC_MOD_DATE="$(getDateModified "$LOCAL_CERT_FILE")"
+
+  chownAndRestartTraefik
+}
+
+#-------------------------------------------------------------------------------
+# Run the script.
+#-------------------------------------------------------------------------------
+mainScript

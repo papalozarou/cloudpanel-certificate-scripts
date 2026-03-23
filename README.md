@@ -30,7 +30,7 @@ If you change the name of this directory, you will need to update `clp-common` t
 Copy the scripts to `/usr/local/bin`:
 
 ```
-sudo cp ~/cloudpanel-cert-scripts/* /usr/local/bin
+sudo cp ~/cloudpanel-certificate-scripts/* /usr/local/bin
 ```
 
 You may need to check that files are executable, via something like `ls -lna /usr/local/bin | grep clp*`, though `clp-common` does not need to be as it only contains shared variables and is imported into the other three files.

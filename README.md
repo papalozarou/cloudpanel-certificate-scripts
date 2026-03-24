@@ -17,7 +17,7 @@ Grab the scripts:
 git clone https://github.com/papalozarou/cloudpanel-certificate-scripts.git
 ```
 
-You will need to edit `clp-common` to add the user name for the acme.sh user.
+**You will need to edit `clp-common` to add the user name for the acme.sh user.**
 
 Create a folder within your acme.sh user's home directory, to store stub files:
 
